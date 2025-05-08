@@ -18,7 +18,7 @@
     "symfony/yaml": "^6.4 || ^7.1",
     "tourze/doctrine-indexed-bundle": "0.0.*",
     "tourze/doctrine-timestamp-bundle": "0.0.*",
-    "tourze/easy-admin-attribute": "0.1.*"
+    "psr/simple-cache": "^1.0|^2.0|^3.0"
   },
   "require-dev": {
     "phpstan/phpstan": "^2.1",
