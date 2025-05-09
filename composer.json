@@ -17,6 +17,7 @@
     "symfony/http-client-contracts": "^2.5 | ^3.0",
     "symfony/http-foundation": "^6.4",
     "symfony/http-kernel": "^6.4",
+    "symfony/routing": "^6.4",
     "symfony/yaml": "^6.4 || ^7.1",
     "tourze/doctrine-indexed-bundle": "0.0.*",
     "tourze/doctrine-timestamp-bundle": "0.0.*",
