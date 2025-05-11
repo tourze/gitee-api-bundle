@@ -21,7 +21,7 @@ final class GiteeApiClient
         $this->client = HttpClient::create();
     }
 
-    public function request(string $method, string $path, array $options = [], ?string $userId = null, GiteeApplication $application = null): array
+    public function request(string $method, string $path, array $options = [], ?string $userId = null, ?GiteeApplication $application = null): array
     {
         if ($userId && $application) {
             $token = $this->tokenRepository->findLatestByUserAndApplication($userId, $application->getId());
@@ -92,24 +92,24 @@ final class GiteeApiClient
         return $repositories;
     }
 
-    public function getRepository(string $owner, string $repo, ?string $userId = null, GiteeApplication $application = null): array
+    public function getRepository(string $owner, string $repo, ?string $userId = null, ?GiteeApplication $application = null): array
     {
         return $this->request('GET', "/repos/$owner/$repo", [], $userId, $application);
     }
 
-    public function getBranches(string $owner, string $repo, ?string $userId = null, GiteeApplication $application = null): array
+    public function getBranches(string $owner, string $repo, ?string $userId = null, ?GiteeApplication $application = null): array
     {
         return $this->request('GET', "/repos/$owner/$repo/branches", [], $userId, $application);
     }
 
-    public function getIssues(string $owner, string $repo, array $params = [], ?string $userId = null, GiteeApplication $application = null): array
+    public function getIssues(string $owner, string $repo, array $params = [], ?string $userId = null, ?GiteeApplication $application = null): array
     {
         return $this->request('GET', "/repos/$owner/$repo/issues", [
             'query' => $params,
         ], $userId, $application);
     }
 
-    public function getPullRequests(string $owner, string $repo, array $params = [], ?string $userId = null, GiteeApplication $application = null): array
+    public function getPullRequests(string $owner, string $repo, array $params = [], ?string $userId = null, ?GiteeApplication $application = null): array
     {
         return $this->request('GET', "/repos/$owner/$repo/pulls", [
             'query' => $params,
