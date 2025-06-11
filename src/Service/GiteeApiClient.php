@@ -41,7 +41,7 @@ final class GiteeApiClient
             );
 
             return $response->toArray();
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             throw new GiteeApiException(sprintf('API请求失败: %s', $e->getMessage()), 0, $e);
         }
     }
@@ -132,7 +132,7 @@ final class GiteeApiClient
             ]);
 
             return $response;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             throw new GiteeApiException(sprintf('API请求失败: %s', $e->getMessage()), 0, $e);
         }
     }

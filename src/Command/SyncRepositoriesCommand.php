@@ -56,7 +56,7 @@ class SyncRepositoriesCommand extends Command
         // 获取用户的所有仓库
         try {
             $repositories = $this->repositoryService->getRepositories($userId, $application);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $io->error(sprintf('获取仓库列表失败: %s', $e->getMessage()));
             return Command::FAILURE;
         }
