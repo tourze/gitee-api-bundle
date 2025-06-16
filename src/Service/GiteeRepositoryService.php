@@ -42,7 +42,7 @@ class GiteeRepositoryService
      * @param GiteeApplication|null $application 应用
      * @return array 仓库详情
      */
-    public function getRepository(string $owner, string $repo, ?string $userId = null, GiteeApplication $application = null): array
+    public function getRepository(string $owner, string $repo, ?string $userId = null, ?GiteeApplication $application = null): array
     {
         return $this->giteeClient->request('GET', "/repos/$owner/$repo", [], $userId, $application);
     }
@@ -56,7 +56,7 @@ class GiteeRepositoryService
      * @param GiteeApplication|null $application 应用
      * @return array 分支列表
      */
-    public function getBranches(string $owner, string $repo, ?string $userId = null, GiteeApplication $application = null): array
+    public function getBranches(string $owner, string $repo, ?string $userId = null, ?GiteeApplication $application = null): array
     {
         return $this->giteeClient->request('GET', "/repos/$owner/$repo/branches", [], $userId, $application);
     }
@@ -71,7 +71,7 @@ class GiteeRepositoryService
      * @param GiteeApplication|null $application 应用
      * @return array 问题列表
      */
-    public function getIssues(string $owner, string $repo, array $params = [], ?string $userId = null, GiteeApplication $application = null): array
+    public function getIssues(string $owner, string $repo, array $params = [], ?string $userId = null, ?GiteeApplication $application = null): array
     {
         return $this->giteeClient->request('GET', "/repos/$owner/$repo/issues", [
             'query' => $params,
@@ -88,7 +88,7 @@ class GiteeRepositoryService
      * @param GiteeApplication|null $application 应用
      * @return array PR列表
      */
-    public function getPullRequests(string $owner, string $repo, array $params = [], ?string $userId = null, GiteeApplication $application = null): array
+    public function getPullRequests(string $owner, string $repo, array $params = [], ?string $userId = null, ?GiteeApplication $application = null): array
     {
         return $this->giteeClient->request('GET', "/repos/$owner/$repo/pulls", [
             'query' => $params,

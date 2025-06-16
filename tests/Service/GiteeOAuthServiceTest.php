@@ -214,7 +214,56 @@ class GiteeOAuthServiceTest extends TestCase
      */
     public function testRefreshToken(): void
     {
-        $this->markTestSkipped('withConsecutive方法在新版PHPUnit中不再支持，跳过该测试');
+        $oldToken = new GiteeAccessToken();
+        $oldToken->setRefreshToken('old_refresh_token')
+            ->setAccessToken('old_access_token')
+            ->setUserId('test_user')
+            ->setGiteeUsername('gitee_user')
+            ->setApplication($this->application);
+        
+        // 准备响应数据
+        $tokenData = [
+            'access_token' => 'new_access_token',
+            'refresh_token' => 'new_refresh_token',
+            'expires_in' => 7200
+        ];
+        
+        // 配置HTTP客户端Mock
+        $tokenResponse = $this->createMock(ResponseInterface::class);
+        $tokenResponse->method('toArray')->willReturn($tokenData);
+        
+        $this->httpClient->expects($this->once())
+            ->method('request')
+            ->with(
+                'POST',
+                'https://gitee.com/oauth/token',
+                [
+                    'body' => [
+                        'grant_type' => 'refresh_token',
+                        'refresh_token' => 'old_refresh_token',
+                        'client_id' => 'client_id',
+                        'client_secret' => 'client_secret',
+                    ]
+                ]
+            )
+            ->willReturn($tokenResponse);
+        
+        // 配置EntityManager Mock
+        $this->entityManager->expects($this->once())
+            ->method('persist')
+            ->with($this->isInstanceOf(GiteeAccessToken::class));
+            
+        $this->entityManager->expects($this->once())
+            ->method('flush');
+        
+        // 执行测试
+        $newToken = $this->oauthService->refreshToken($oldToken);
+        
+        // 验证结果
+        $this->assertInstanceOf(GiteeAccessToken::class, $newToken);
+        $this->assertEquals('new_access_token', $newToken->getAccessToken());
+        $this->assertEquals('new_refresh_token', $newToken->getRefreshToken());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $newToken->getExpiresAt());
     }
     
     /**
@@ -222,7 +271,30 @@ class GiteeOAuthServiceTest extends TestCase
      */
     public function testGetAccessToken_withValidToken(): void
     {
-        $this->markTestSkipped('withConsecutive方法在新版PHPUnit中不再支持，跳过该测试');
+        $userId = 'test_user';
+        $token = new GiteeAccessToken();
+        $token->setAccessToken('valid_token')
+            ->setExpiresAt(new \DateTimeImmutable('+1 hour'))
+            ->setUserId($userId)
+            ->setGiteeUsername('gitee_user')
+            ->setApplication($this->application);
+        
+        $this->tokenRepository->expects($this->once())
+            ->method('findBy')
+            ->with(
+                ['userId' => $userId, 'application' => $this->application],
+                ['createdAt' => 'DESC']
+            )
+            ->willReturn([$token]);
+        
+        // 不应该调用刷新Token
+        $this->httpClient->expects($this->never())
+            ->method('request');
+        
+        $result = $this->oauthService->getAccessToken($userId, $this->application);
+        
+        $this->assertSame($token, $result);
+        $this->assertEquals('valid_token', $result->getAccessToken());
     }
     
     /**
@@ -230,6 +302,18 @@ class GiteeOAuthServiceTest extends TestCase
      */
     public function testGetAccessToken_withNoToken(): void
     {
-        $this->markTestSkipped('withConsecutive方法在新版PHPUnit中不再支持，跳过该测试');
+        $userId = 'test_user';
+        
+        $this->tokenRepository->expects($this->once())
+            ->method('findBy')
+            ->with([
+                'userId' => $userId,
+                'application' => $this->application
+            ])
+            ->willReturn([]);
+        
+        $result = $this->oauthService->getAccessToken($userId, $this->application);
+        
+        $this->assertNull($result);
     }
 } 
