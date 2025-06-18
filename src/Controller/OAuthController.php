@@ -55,7 +55,7 @@ class OAuthController extends AbstractController
             ], UrlGeneratorInterface::ABSOLUTE_URL)
         );
 
-        if ($callbackUrl) {
+        if ($callbackUrl !== null) {
             // Replace template variables in callback URL
             $callbackUrl = strtr($callbackUrl, [
                 '{accessToken}' => $token->getAccessToken(),

@@ -6,17 +6,13 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use GiteeApiBundle\Repository\GiteeRepositoryRepository;
 use Tourze\DoctrineTimestampBundle\Traits\TimestampableAware;
-use Tourze\EasyAdmin\Attribute\Column\ExportColumn;
-use Tourze\EasyAdmin\Attribute\Column\ListColumn;
 
 #[ORM\Entity(repositoryClass: GiteeRepositoryRepository::class)]
 #[ORM\Table(name: 'gitee_repository', options: ['comment' => 'Gitee仓库信息'])]
 #[ORM\UniqueConstraint(columns: ['user_id', 'application_id', 'full_name'])]
-class GiteeRepository
+class GiteeRepository implements \Stringable
 {
     use TimestampableAware;
-    #[ListColumn(order: -1)]
-    #[ExportColumn]
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER, options: ['comment' => 'ID'])]
@@ -194,4 +190,10 @@ class GiteeRepository
     {
         $this->pushedAt = $pushedAt;
         return $this;
-    }}
+    }
+
+    public function __toString(): string
+    {
+        return $this->getFullName();
+    }
+}

@@ -14,7 +14,6 @@ class GiteeScopeTest extends TestCase
     {
         $defaultScopes = GiteeScope::getDefaultScopes();
         
-        $this->assertIsArray($defaultScopes);
         $this->assertCount(5, $defaultScopes);
         $this->assertContains(GiteeScope::USER, $defaultScopes);
         $this->assertContains(GiteeScope::PROJECTS, $defaultScopes);
@@ -80,7 +79,6 @@ class GiteeScopeTest extends TestCase
         ];
         
         foreach ($scopes as $scope) {
-            $this->assertIsString($scope->value);
             $this->assertNotEmpty($scope->value);
         }
     }

@@ -23,6 +23,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class SyncRepositoriesCommand extends Command
 {
+    protected const NAME = 'gitee:sync:repositories';
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly GiteeRepositoryService $repositoryService,
@@ -78,7 +79,7 @@ class SyncRepositoriesCommand extends Command
             $pushedAt = new DateTimeImmutable($repoData['pushed_at']);
 
             // 检查是否需要更新
-            if (!$force && isset($existingRepos[$fullName])) {
+            if ($force === false && isset($existingRepos[$fullName])) {
                 $existingRepo = $existingRepos[$fullName];
                 if ($existingRepo->getPushedAt() >= $pushedAt) {
                     $skipped++;
@@ -88,7 +89,7 @@ class SyncRepositoriesCommand extends Command
 
             // 创建或更新仓库信息
             $repo = $existingRepos[$fullName] ?? new GiteeRepository();
-            $isNew = !$repo->getId();
+            $isNew = $repo->getId() === null;
 
             $repo->setApplication($application)
                 ->setUserId($userId)

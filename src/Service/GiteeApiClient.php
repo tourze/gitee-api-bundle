@@ -23,9 +23,9 @@ final class GiteeApiClient
 
     public function request(string $method, string $path, array $options = [], ?string $userId = null, ?GiteeApplication $application = null): array
     {
-        if ($userId && $application) {
-            $token = $this->tokenRepository->findLatestByUserAndApplication($userId, $application->getId());
-            if ($token) {
+        if ($userId !== null && $application !== null) {
+            $token = $this->tokenRepository->findLatestByUserAndApplication($userId, (string) $application->getId());
+            if ($token !== null) {
                 $options['headers'] = array_merge(
                     $options['headers'] ?? [],
                     ['Authorization' => 'Bearer ' . $token->getAccessToken()]
@@ -62,8 +62,8 @@ final class GiteeApiClient
      */
     public function getRepositories(string $userId, GiteeApplication $application, array $params = []): array
     {
-        $token = $this->tokenRepository->findLatestByUserAndApplication($userId, $application->getId());
-        if (!$token) {
+        $token = $this->tokenRepository->findLatestByUserAndApplication($userId, (string) $application->getId());
+        if ($token === null) {
             throw new GiteeApiException('未找到有效的访问令牌');
         }
 

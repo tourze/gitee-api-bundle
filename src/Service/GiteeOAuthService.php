@@ -7,7 +7,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use GiteeApiBundle\Entity\GiteeAccessToken;
 use GiteeApiBundle\Entity\GiteeApplication;
 use GiteeApiBundle\Repository\GiteeAccessTokenRepository;
-use GiteeApiBundle\Repository\GiteeApplicationRepository;
 use Psr\SimpleCache\CacheInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -22,7 +21,6 @@ final class GiteeOAuthService
         private readonly HttpClientInterface $httpClient,
         private readonly EntityManagerInterface $entityManager,
         private readonly GiteeAccessTokenRepository $tokenRepository,
-        private readonly GiteeApplicationRepository $applicationRepository,
         private readonly CacheInterface $cache,
     ) {
     }
@@ -38,7 +36,7 @@ final class GiteeOAuthService
     {
         $state = bin2hex(random_bytes(16));
 
-        if ($callbackUrl) {
+        if ($callbackUrl !== null) {
             $this->cache->set("gitee_oauth_state_{$state}", $callbackUrl, self::STATE_TTL);
         }
 
@@ -141,7 +139,7 @@ final class GiteeOAuthService
         }
 
         $token = $tokens[0];
-        if ($token->getExpiresAt() && $token->getExpiresAt() < new DateTimeImmutable() && $token->getRefreshToken()) {
+        if ($token->getExpiresAt() !== null && $token->getExpiresAt() < new DateTimeImmutable() && $token->getRefreshToken() !== null) {
             return $this->refreshToken($token);
         }
 

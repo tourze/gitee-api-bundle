@@ -7,7 +7,6 @@ use GiteeApiBundle\Entity\GiteeAccessToken;
 use GiteeApiBundle\Entity\GiteeApplication;
 use GiteeApiBundle\Enum\GiteeScope;
 use GiteeApiBundle\Repository\GiteeAccessTokenRepository;
-use GiteeApiBundle\Repository\GiteeApplicationRepository;
 use GiteeApiBundle\Service\GiteeOAuthService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -21,7 +20,6 @@ class GiteeOAuthServiceTest extends TestCase
     private MockObject $httpClient;
     private MockObject $entityManager;
     private MockObject $tokenRepository;
-    private MockObject $applicationRepository;
     private MockObject $cache;
     private GiteeApplication $application;
     
@@ -30,14 +28,12 @@ class GiteeOAuthServiceTest extends TestCase
         $this->httpClient = $this->createMock(HttpClientInterface::class);
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->tokenRepository = $this->createMock(GiteeAccessTokenRepository::class);
-        $this->applicationRepository = $this->createMock(GiteeApplicationRepository::class);
         $this->cache = $this->createMock(CacheInterface::class);
         
         $this->oauthService = new GiteeOAuthService(
             $this->httpClient,
             $this->entityManager,
             $this->tokenRepository,
-            $this->applicationRepository,
             $this->cache
         );
         
