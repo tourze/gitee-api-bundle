@@ -6,8 +6,6 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use GiteeApiBundle\Enum\GiteeScope;
 use GiteeApiBundle\Repository\GiteeApplicationRepository;
-use Tourze\DoctrineTimestampBundle\Attribute\CreateTimeColumn;
-use Tourze\DoctrineTimestampBundle\Attribute\UpdateTimeColumn;
 use Tourze\DoctrineTimestampBundle\Traits\TimestampableAware;
 
 #[ORM\Entity(repositoryClass: GiteeApplicationRepository::class)]
@@ -20,40 +18,27 @@ class GiteeApplication implements \Stringable
     #[ORM\Column(type: Types::INTEGER, options: ['comment' => 'ID'])]
     private ?int $id = 0;
 
-    #[ORM\Column(type: 'string', length: 255, options: ['comment' => '应用名称'])]
+    #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '应用名称'])]
     private string $name;
 
-    #[ORM\Column(type: 'string', length: 255, options: ['comment' => '客户端ID'])]
+    #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '客户端ID'])]
     private string $clientId;
 
-    #[ORM\Column(type: 'string', length: 255, options: ['comment' => '客户端密钥'])]
+    #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '客户端密钥'])]
     private string $clientSecret;
 
-    #[ORM\Column(type: 'string', length: 255, nullable: true, options: ['comment' => '应用主页'])]
+    #[ORM\Column(type: Types::STRING, length: 255, nullable: true, options: ['comment' => '应用主页'])]
     private ?string $homepage = null;
 
-    #[ORM\Column(type: 'text', nullable: true, options: ['comment' => '应用描述'])]
+    #[ORM\Column(type: Types::TEXT, nullable: true, options: ['comment' => '应用描述'])]
     private ?string $description = null;
 
     /**
      * @var string[]
      */
-    #[ORM\Column(type: 'json', options: ['comment' => '授权作用域'])]
+    #[ORM\Column(type: Types::JSON, options: ['comment' => '授权作用域'])]
     private array $scopes;
 
-    /**
-     * @DateRangePickerField()
-     */
-    #[CreateTimeColumn]
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true, options: ['comment' => '创建时间'])]
-    private ?\DateTimeInterface $createdAt = null;
-
-    /**
-     * @DateRangePickerField()
-     */
-    #[UpdateTimeColumn]
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true, options: ['comment' => '更新时间'])]
-    private ?\DateTimeInterface $updatedAt = null;
 
     public function __construct()
     {

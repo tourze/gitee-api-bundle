@@ -18,12 +18,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
-    name: 'gitee:sync:repositories',
+    name: self::NAME,
     description: '同步用户的Gitee仓库信息',
 )]
 class SyncRepositoriesCommand extends Command
 {
-    protected const NAME = 'gitee:sync:repositories';
+    public const NAME = 'gitee:sync:repositories';
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly GiteeRepositoryService $repositoryService,

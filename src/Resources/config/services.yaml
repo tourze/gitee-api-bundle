@@ -15,3 +15,8 @@ services:
     resource: '../../Repository/'
   GiteeApiBundle\Service\:
     resource: '../../Service/'
+
+  # AttributeControllerLoader 服务，用于自动加载基于属性的控制器
+  GiteeApiBundle\Service\AttributeControllerLoader:
+    arguments:
+      $controllerDir: '../Controller'

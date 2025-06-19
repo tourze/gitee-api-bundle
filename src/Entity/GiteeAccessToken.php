@@ -21,19 +21,19 @@ class GiteeAccessToken implements \Stringable
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private GiteeApplication $application;
 
-    #[ORM\Column(type: 'string', length: 255, options: ['comment' => '用户ID'])]
+    #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '用户ID'])]
     private string $userId;
 
-    #[ORM\Column(type: 'string', length: 255, options: ['comment' => 'Access Token'])]
+    #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => 'Access Token'])]
     private string $accessToken;
 
-    #[ORM\Column(type: 'string', length: 255, nullable: true, options: ['comment' => 'Refresh Token'])]
+    #[ORM\Column(type: Types::STRING, length: 255, nullable: true, options: ['comment' => 'Refresh Token'])]
     private ?string $refreshToken = null;
 
-    #[ORM\Column(type: 'datetime_immutable', nullable: true, options: ['comment' => '过期时间'])]
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, options: ['comment' => '过期时间'])]
     private ?\DateTimeImmutable $expiresAt = null;
 
-    #[ORM\Column(type: 'string', length: 255, nullable: true, options: ['comment' => 'Gitee用户名'])]
+    #[ORM\Column(type: Types::STRING, length: 255, nullable: true, options: ['comment' => 'Gitee用户名'])]
     private ?string $giteeUsername = null;
 
     public function getId(): ?int

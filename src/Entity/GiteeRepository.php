@@ -22,37 +22,37 @@ class GiteeRepository implements \Stringable
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private GiteeApplication $application;
 
-    #[ORM\Column(type: 'string', length: 255, options: ['comment' => '用户ID'])]
+    #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '用户ID'])]
     private string $userId;
 
-    #[ORM\Column(type: 'string', length: 255, options: ['comment' => '仓库全名(owner/repo)'])]
+    #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '仓库全名(owner/repo)'])]
     private string $fullName;
 
-    #[ORM\Column(type: 'string', length: 255, options: ['comment' => '仓库名称'])]
+    #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '仓库名称'])]
     private string $name;
 
-    #[ORM\Column(type: 'string', length: 255, options: ['comment' => '仓库所有者'])]
+    #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '仓库所有者'])]
     private string $owner;
 
-    #[ORM\Column(type: 'text', nullable: true, options: ['comment' => '仓库描述'])]
+    #[ORM\Column(type: Types::TEXT, nullable: true, options: ['comment' => '仓库描述'])]
     private ?string $description = null;
 
-    #[ORM\Column(type: 'string', length: 255, options: ['comment' => '默认分支'])]
+    #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '默认分支'])]
     private string $defaultBranch = 'master';
 
-    #[ORM\Column(type: 'boolean', options: ['comment' => '是否私有'])]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['comment' => '是否私有'])]
     private bool $private = false;
 
-    #[ORM\Column(type: 'boolean', options: ['comment' => '是否为Fork'])]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['comment' => '是否为Fork'])]
     private bool $fork = false;
 
-    #[ORM\Column(type: 'string', length: 255, options: ['comment' => 'HTML URL'])]
+    #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => 'HTML URL'])]
     private string $htmlUrl;
 
-    #[ORM\Column(type: 'string', length: 255, options: ['comment' => 'SSH URL'])]
+    #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => 'SSH URL'])]
     private string $sshUrl;
 
-    #[ORM\Column(type: 'datetime_immutable', options: ['comment' => '最后推送时间'])]
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '最后推送时间'])]
     private \DateTimeImmutable $pushedAt;
 
     public function getId(): ?int
