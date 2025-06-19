@@ -11,7 +11,6 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
-#[Route('/gitee/oauth/callback/{applicationId}', name: 'gitee_oauth_callback')]
 class GiteeOAuthCallbackController extends AbstractController
 {
     public function __construct(
@@ -20,6 +19,7 @@ class GiteeOAuthCallbackController extends AbstractController
     ) {
     }
 
+    #[Route('/gitee/oauth/callback/{applicationId}', name: 'gitee_oauth_callback')]
     public function __invoke(Request $request, GiteeApplication $application): Response
     {
         $code = $request->query->get('code');
