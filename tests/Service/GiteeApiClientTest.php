@@ -122,7 +122,7 @@ class GiteeApiClientTest extends TestCase
     
     /**
      * 测试获取用户信息
-     * 
+     *
      * 由于GiteeApiClient被标记为final，我们不能直接mock它
      * 所以我们将直接测试真实对象的行为
      */
