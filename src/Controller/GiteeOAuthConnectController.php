@@ -19,7 +19,7 @@ class GiteeOAuthConnectController extends AbstractController
     ) {
     }
 
-    #[Route('/gitee/oauth/connect/{applicationId}', name: 'gitee_oauth_connect')]
+    #[Route(path: '/gitee/oauth/connect/{applicationId}', name: 'gitee_oauth_connect')]
     public function __invoke(Request $request, GiteeApplication $application): Response
     {
         $callbackUrlParam = $request->query->get('callbackUrl');

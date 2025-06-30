@@ -75,17 +75,6 @@ class GiteeOAuthCallbackControllerTest extends TestCase
         $this->controller->__invoke($request, $this->application);
     }
 
-    /**
-     * 测试基本的成功流程需要模拟 HTTP 请求，过于复杂
-     * 我们在这里只测试输入验证逻辑
-     */
-    public function testInvoke_successFlowRequiresIntegrationTest(): void
-    {
-        $this->markTestSkipped(
-            '完整的 OAuth 回调流程测试需要模拟 HTTP 客户端响应，' .
-            '这属于集成测试的范畴。单元测试主要验证输入验证逻辑。'
-        );
-    }
 
     protected function setUp(): void
     {

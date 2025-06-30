@@ -6,6 +6,7 @@ use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use GiteeApiBundle\Entity\GiteeAccessToken;
 use GiteeApiBundle\Entity\GiteeApplication;
+use GiteeApiBundle\Exception\GiteeUserInfoException;
 use GiteeApiBundle\Repository\GiteeAccessTokenRepository;
 use Psr\SimpleCache\CacheInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -82,7 +83,7 @@ final class GiteeOAuthService
         ]);
 
         $userData = $userResponse->toArray();
-        $giteeUsername = $userData['login'] ?? throw new \RuntimeException('Failed to get Gitee username');
+        $giteeUsername = $userData['login'] ?? throw GiteeUserInfoException::failedToGetUsername();
 
         // Create new token
         $token = new GiteeAccessToken();
