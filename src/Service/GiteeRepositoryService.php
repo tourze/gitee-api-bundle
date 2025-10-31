@@ -1,28 +1,43 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GiteeApiBundle\Service;
 
 use GiteeApiBundle\Entity\GiteeApplication;
 use GiteeApiBundle\Exception\GiteeApiException;
+use Monolog\Attribute\WithMonologChannel;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
-class GiteeRepositoryService
+#[WithMonologChannel(channel: 'gitee_api')]
+readonly class GiteeRepositoryService
 {
     public function __construct(
-        private readonly GiteeApiClient $giteeClient,
+        private GiteeApiClientInterface $giteeClient,
+        private LoggerInterface $logger = new NullLogger(),
     ) {
     }
 
     /**
      * 获取用户的仓库列表
      *
-     * @param string $userId 用户ID
+     * @param string           $userId      用户ID
      * @param GiteeApplication $application 应用
-     * @param array $params 额外的查询参数
-     * @return array 仓库列表
+     * @param array<string, mixed> $params      额外的查询参数
+     *
+     * @return array<array-key, array<string, mixed>> 仓库列表
+     *
      * @throws GiteeApiException
      */
     public function getRepositories(string $userId, GiteeApplication $application, array $params = []): array
     {
+        $this->logger->info('Fetching repositories for user', [
+            'userId' => $userId,
+            'applicationId' => $application->getId(),
+            'params' => $params,
+        ]);
+
         return $this->giteeClient->request('GET', '/user/repos', [
             'query' => array_merge([
                 'sort' => 'pushed',
@@ -36,44 +51,69 @@ class GiteeRepositoryService
     /**
      * 获取仓库详情
      *
-     * @param string $owner 仓库所有者
-     * @param string $repo 仓库名称
-     * @param string|null $userId 用户ID
+     * @param string                $owner       仓库所有者
+     * @param string                $repo        仓库名称
+     * @param string|null           $userId      用户ID
      * @param GiteeApplication|null $application 应用
-     * @return array 仓库详情
+     *
+     * @return array<string, mixed> 仓库详情
      */
     public function getRepository(string $owner, string $repo, ?string $userId = null, ?GiteeApplication $application = null): array
     {
-        return $this->giteeClient->request('GET', "/repos/$owner/$repo", [], $userId, $application);
+        $this->logger->info('Fetching repository details', [
+            'owner' => $owner,
+            'repo' => $repo,
+            'userId' => $userId,
+            'applicationId' => $application?->getId(),
+        ]);
+
+        return $this->giteeClient->request('GET', "/repos/{$owner}/{$repo}", [], $userId, $application);
     }
 
     /**
      * 获取仓库分支列表
      *
-     * @param string $owner 仓库所有者
-     * @param string $repo 仓库名称
-     * @param string|null $userId 用户ID
+     * @param string                $owner       仓库所有者
+     * @param string                $repo        仓库名称
+     * @param string|null           $userId      用户ID
      * @param GiteeApplication|null $application 应用
-     * @return array 分支列表
+     *
+     * @return array<array-key, array<string, mixed>> 分支列表
      */
     public function getBranches(string $owner, string $repo, ?string $userId = null, ?GiteeApplication $application = null): array
     {
-        return $this->giteeClient->request('GET', "/repos/$owner/$repo/branches", [], $userId, $application);
+        $this->logger->info('Fetching repository branches', [
+            'owner' => $owner,
+            'repo' => $repo,
+            'userId' => $userId,
+            'applicationId' => $application?->getId(),
+        ]);
+
+        return $this->giteeClient->request('GET', "/repos/{$owner}/{$repo}/branches", [], $userId, $application);
     }
 
     /**
      * 获取仓库问题列表
      *
-     * @param string $owner 仓库所有者
-     * @param string $repo 仓库名称
-     * @param array $params 查询参数
-     * @param string|null $userId 用户ID
+     * @param string                $owner       仓库所有者
+     * @param string                $repo        仓库名称
+     * @param array<string, mixed>  $params      查询参数
+     * @param string|null           $userId      用户ID
      * @param GiteeApplication|null $application 应用
-     * @return array 问题列表
+     *
+     * @return array<array-key, array<string, mixed>> 问题列表
      */
     public function getIssues(string $owner, string $repo, array $params = [], ?string $userId = null, ?GiteeApplication $application = null): array
     {
-        return $this->giteeClient->request('GET', "/repos/$owner/$repo/issues", [
+        $this->logger->info('Fetching repository issues', [
+            'owner' => $owner,
+            'repo' => $repo,
+            'params' => $params,
+            'userId' => $userId,
+            'applicationId' => $application?->getId(),
+        ]);
+
+        return $this->giteeClient->request('GET', "/repos/{$owner}/{$repo}/issues", [
             'query' => $params,
         ], $userId, $application);
     }
@@ -81,16 +121,25 @@ class GiteeRepositoryService
     /**
      * 获取仓库PR列表
      *
-     * @param string $owner 仓库所有者
-     * @param string $repo 仓库名称
-     * @param array $params 查询参数
-     * @param string|null $userId 用户ID
+     * @param string                $owner       仓库所有者
+     * @param string                $repo        仓库名称
+     * @param array<string, mixed>  $params      查询参数
+     * @param string|null           $userId      用户ID
      * @param GiteeApplication|null $application 应用
-     * @return array PR列表
+     *
+     * @return array<array-key, array<string, mixed>> PR列表
      */
     public function getPullRequests(string $owner, string $repo, array $params = [], ?string $userId = null, ?GiteeApplication $application = null): array
     {
-        return $this->giteeClient->request('GET', "/repos/$owner/$repo/pulls", [
+        $this->logger->info('Fetching repository pull requests', [
+            'owner' => $owner,
+            'repo' => $repo,
+            'params' => $params,
+            'userId' => $userId,
+            'applicationId' => $application?->getId(),
+        ]);
+
+        return $this->giteeClient->request('GET', "/repos/{$owner}/{$repo}/pulls", [
             'query' => $params,
         ], $userId, $application);
     }

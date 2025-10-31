@@ -1,45 +1,46 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GiteeApiBundle\Tests\Service;
 
 use GiteeApiBundle\Entity\GiteeApplication;
-use GiteeApiBundle\Repository\GiteeAccessTokenRepository;
-use GiteeApiBundle\Service\GiteeApiClient;
+use GiteeApiBundle\Service\GiteeApiClientInterface;
 use GiteeApiBundle\Service\GiteeRepositoryService;
-use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
-use Symfony\Contracts\HttpClient\ResponseInterface;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use Tourze\PHPUnitSymfonyKernelTest\AbstractIntegrationTestCase;
 
-class GiteeRepositoryServiceTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(GiteeRepositoryService::class)]
+#[RunTestsInSeparateProcesses]
+final class GiteeRepositoryServiceTest extends AbstractIntegrationTestCase
 {
     private GiteeRepositoryService $repositoryService;
-    private MockObject $httpClient;
-    private MockObject $tokenRepository;
+
+    private MockApiClient $giteeApiClient;
+
     private GiteeApplication $application;
 
-    protected function setUp(): void
+    protected function onSetUp(): void
     {
-        // 创建依赖的 mock
-        $this->httpClient = $this->createMock(HttpClientInterface::class);
-        $this->tokenRepository = $this->createMock(GiteeAccessTokenRepository::class);
+        // 创建 GiteeApiClientInterface 的匿名类实现
+        $this->giteeApiClient = $this->createMockApiClient();
 
-        // 创建真实的 GiteeApiClient 实例
-        $giteeApiClient = new GiteeApiClient($this->tokenRepository);
+        // 将对象注册到容器中
+        $container = self::getContainer();
+        $container->set(GiteeApiClientInterface::class, $this->giteeApiClient);
 
-        // 使用反射替换内部的 HttpClient
-        $reflectionProperty = new \ReflectionProperty(GiteeApiClient::class, 'client');
-        $reflectionProperty->setAccessible(true);
-        $reflectionProperty->setValue($giteeApiClient, $this->httpClient);
-
-        // 创建 GiteeRepositoryService 实例
-        $this->repositoryService = new GiteeRepositoryService($giteeApiClient);
+        // 从容器获取 GiteeRepositoryService
+        $this->repositoryService = self::getService(GiteeRepositoryService::class);
 
         // 创建应用实例
         $this->application = new GiteeApplication();
-        $this->application->setName('Test App')
-            ->setClientId('client_id')
-            ->setClientSecret('client_secret');
+        $this->application->setName('Test App');
+        $this->application->setClientId('client_id');
+        $this->application->setClientSecret('client_secret');
 
         // 使用反射设置 ID
         $reflectionProperty = new \ReflectionProperty(GiteeApplication::class, 'id');
@@ -58,33 +59,22 @@ class GiteeRepositoryServiceTest extends TestCase
             ['id' => 2, 'name' => 'repo2'],
         ];
 
-        // 模拟 token repository 返回 null（没有 token）
-        $this->tokenRepository->expects($this->once())
-            ->method('findLatestByUserAndApplication')
-            ->with($userId, $this->application->getId())
-            ->willReturn(null);
-
-        // 模拟 HTTP 响应
-        $response = $this->createMock(ResponseInterface::class);
-        $response->expects($this->once())
-            ->method('toArray')
-            ->willReturn($expectedResult);
-
-        $this->httpClient->expects($this->once())
-            ->method('request')
-            ->with(
-                'GET',
-                'https://gitee.com/api/v5/user/repos',
-                [
-                    'query' => [
-                        'sort' => 'pushed',
-                        'direction' => 'desc',
-                        'per_page' => 100,
-                        'page' => 1,
-                    ]
-                ]
-            )
-            ->willReturn($response);
+        // 设置 GiteeApiClient 的期望请求
+        $this->giteeApiClient->expectRequest(
+            'GET',
+            '/user/repos',
+            [
+                'query' => [
+                    'sort' => 'pushed',
+                    'direction' => 'desc',
+                    'per_page' => 100,
+                    'page' => 1,
+                ],
+            ],
+            $userId,
+            $this->application,
+            $expectedResult
+        );
 
         $result = $this->repositoryService->getRepositories($userId, $this->application);
 
@@ -101,26 +91,15 @@ class GiteeRepositoryServiceTest extends TestCase
         $userId = 'testuser';
         $expectedResult = ['id' => 1, 'name' => 'testrepo', 'owner' => 'testowner'];
 
-        // 模拟 token repository 返回 null（没有 token）
-        $this->tokenRepository->expects($this->once())
-            ->method('findLatestByUserAndApplication')
-            ->with($userId, $this->application->getId())
-            ->willReturn(null);
-
-        // 模拟 HTTP 响应
-        $response = $this->createMock(ResponseInterface::class);
-        $response->expects($this->once())
-            ->method('toArray')
-            ->willReturn($expectedResult);
-
-        $this->httpClient->expects($this->once())
-            ->method('request')
-            ->with(
-                'GET',
-                "https://gitee.com/api/v5/repos/$owner/$repo",
-                []
-            )
-            ->willReturn($response);
+        // 设置 GiteeApiClient 的期望请求
+        $this->giteeApiClient->expectRequest(
+            'GET',
+            "/repos/{$owner}/{$repo}",
+            [],
+            $userId,
+            $this->application,
+            $expectedResult
+        );
 
         $result = $this->repositoryService->getRepository($owner, $repo, $userId, $this->application);
 
@@ -140,26 +119,15 @@ class GiteeRepositoryServiceTest extends TestCase
             ['name' => 'develop'],
         ];
 
-        // 模拟 token repository 返回 null（没有 token）
-        $this->tokenRepository->expects($this->once())
-            ->method('findLatestByUserAndApplication')
-            ->with($userId, $this->application->getId())
-            ->willReturn(null);
-
-        // 模拟 HTTP 响应
-        $response = $this->createMock(ResponseInterface::class);
-        $response->expects($this->once())
-            ->method('toArray')
-            ->willReturn($expectedResult);
-
-        $this->httpClient->expects($this->once())
-            ->method('request')
-            ->with(
-                'GET',
-                "https://gitee.com/api/v5/repos/$owner/$repo/branches",
-                []
-            )
-            ->willReturn($response);
+        // 设置 GiteeApiClient 的期望请求
+        $this->giteeApiClient->expectRequest(
+            'GET',
+            "/repos/{$owner}/{$repo}/branches",
+            [],
+            $userId,
+            $this->application,
+            $expectedResult
+        );
 
         $result = $this->repositoryService->getBranches($owner, $repo, $userId, $this->application);
 
@@ -180,26 +148,15 @@ class GiteeRepositoryServiceTest extends TestCase
             ['id' => 2, 'title' => 'Issue 2'],
         ];
 
-        // 模拟 token repository 返回 null（没有 token）
-        $this->tokenRepository->expects($this->once())
-            ->method('findLatestByUserAndApplication')
-            ->with($userId, $this->application->getId())
-            ->willReturn(null);
-
-        // 模拟 HTTP 响应
-        $response = $this->createMock(ResponseInterface::class);
-        $response->expects($this->once())
-            ->method('toArray')
-            ->willReturn($expectedResult);
-
-        $this->httpClient->expects($this->once())
-            ->method('request')
-            ->with(
-                'GET',
-                "https://gitee.com/api/v5/repos/$owner/$repo/issues",
-                ['query' => $params]
-            )
-            ->willReturn($response);
+        // 设置 GiteeApiClient 的期望请求
+        $this->giteeApiClient->expectRequest(
+            'GET',
+            "/repos/{$owner}/{$repo}/issues",
+            ['query' => $params],
+            $userId,
+            $this->application,
+            $expectedResult
+        );
 
         $result = $this->repositoryService->getIssues($owner, $repo, $params, $userId, $this->application);
 
@@ -220,29 +177,23 @@ class GiteeRepositoryServiceTest extends TestCase
             ['id' => 2, 'title' => 'PR 2'],
         ];
 
-        // 模拟 token repository 返回 null（没有 token）
-        $this->tokenRepository->expects($this->once())
-            ->method('findLatestByUserAndApplication')
-            ->with($userId, $this->application->getId())
-            ->willReturn(null);
-
-        // 模拟 HTTP 响应
-        $response = $this->createMock(ResponseInterface::class);
-        $response->expects($this->once())
-            ->method('toArray')
-            ->willReturn($expectedResult);
-
-        $this->httpClient->expects($this->once())
-            ->method('request')
-            ->with(
-                'GET',
-                "https://gitee.com/api/v5/repos/$owner/$repo/pulls",
-                ['query' => $params]
-            )
-            ->willReturn($response);
+        // 设置 GiteeApiClient 的期望请求
+        $this->giteeApiClient->expectRequest(
+            'GET',
+            "/repos/{$owner}/{$repo}/pulls",
+            ['query' => $params],
+            $userId,
+            $this->application,
+            $expectedResult
+        );
 
         $result = $this->repositoryService->getPullRequests($owner, $repo, $params, $userId, $this->application);
 
         $this->assertEquals($expectedResult, $result);
+    }
+
+    private function createMockApiClient(): MockApiClient
+    {
+        return new MockApiClient();
     }
 }

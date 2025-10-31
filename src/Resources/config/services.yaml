@@ -16,7 +16,16 @@ services:
   GiteeApiBundle\Service\:
     resource: '../../Service/'
 
-  # AttributeControllerLoader 服务，用于自动加载基于属性的控制器
-  GiteeApiBundle\Service\AttributeControllerLoader:
+  # 为测试环境提供必需的服务  
+  Symfony\Component\Routing\Generator\UrlGeneratorInterface:
+    class: GiteeApiBundle\Tests\Service\MockUrlGenerator
+
+  # 配置缓存实现（测试和开发环境）
+  Psr\SimpleCache\CacheInterface:
+    class: Symfony\Component\Cache\Psr16Cache
     arguments:
-      $controllerDir: '../Controller'
+      - '@cache.array_adapter'
+
+  cache.array_adapter:
+    class: Symfony\Component\Cache\Adapter\ArrayAdapter
+

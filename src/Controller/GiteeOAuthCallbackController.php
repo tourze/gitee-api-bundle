@@ -1,17 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GiteeApiBundle\Controller;
 
 use GiteeApiBundle\Entity\GiteeApplication;
 use GiteeApiBundle\Service\GiteeOAuthService;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
-class GiteeOAuthCallbackController extends AbstractController
+#[Autoconfigure(public: true)]
+final class GiteeOAuthCallbackController extends AbstractController
 {
     public function __construct(
         private readonly GiteeOAuthService $oauthService,
@@ -19,16 +24,18 @@ class GiteeOAuthCallbackController extends AbstractController
     ) {
     }
 
-    #[Route(path: '/gitee/oauth/callback/{applicationId}', name: 'gitee_oauth_callback')]
-    public function __invoke(Request $request, GiteeApplication $application): Response
-    {
+    #[Route(path: '/gitee/oauth/callback/{applicationId}', name: 'gitee_oauth_callback', methods: ['GET', 'HEAD'])]
+    public function __invoke(
+        Request $request,
+        #[MapEntity(id: 'applicationId')] GiteeApplication $application,
+    ): Response {
         $code = $request->query->get('code');
-        if (empty($code) || !is_string($code)) {
+        if (null === $code || '' === $code || !is_string($code)) {
             throw $this->createNotFoundException('No authorization code provided');
         }
 
         $state = $request->query->get('state');
-        $callbackUrl = (is_string($state) && !empty($state)) ? $this->oauthService->verifyState($state) : null;
+        $callbackUrl = (is_string($state) && '' !== $state) ? $this->oauthService->verifyState($state) : null;
 
         $token = $this->oauthService->handleCallback(
             $code,
@@ -38,7 +45,7 @@ class GiteeOAuthCallbackController extends AbstractController
             ], UrlGeneratorInterface::ABSOLUTE_URL)
         );
 
-        if ($callbackUrl !== null) {
+        if (null !== $callbackUrl) {
             // Replace template variables in callback URL
             $callbackUrl = strtr($callbackUrl, [
                 '{accessToken}' => $token->getAccessToken(),

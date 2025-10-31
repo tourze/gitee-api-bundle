@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GiteeApiBundle\Entity;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use GiteeApiBundle\Repository\GiteeRepositoryRepository;
+use Symfony\Component\Validator\Constraints as Assert;
 use Tourze\DoctrineTimestampBundle\Traits\TimestampableAware;
 
 #[ORM\Entity(repositoryClass: GiteeRepositoryRepository::class)]
@@ -13,47 +16,70 @@ use Tourze\DoctrineTimestampBundle\Traits\TimestampableAware;
 class GiteeRepository implements \Stringable
 {
     use TimestampableAware;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER, options: ['comment' => 'ID'])]
-    private ?int $id = 0;
+    private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: GiteeApplication::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private GiteeApplication $application;
 
     #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '用户ID'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     private string $userId;
 
     #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '仓库全名(owner/repo)'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     private string $fullName;
 
     #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '仓库名称'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     private string $name;
 
     #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '仓库所有者'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     private string $owner;
 
     #[ORM\Column(type: Types::TEXT, nullable: true, options: ['comment' => '仓库描述'])]
+    #[Assert\Length(max: 1000)]
     private ?string $description = null;
 
     #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '默认分支'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     private string $defaultBranch = 'master';
 
     #[ORM\Column(type: Types::BOOLEAN, options: ['comment' => '是否私有'])]
+    #[Assert\Type(type: 'bool')]
     private bool $private = false;
 
     #[ORM\Column(type: Types::BOOLEAN, options: ['comment' => '是否为Fork'])]
+    #[Assert\Type(type: 'bool')]
     private bool $fork = false;
 
     #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => 'HTML URL'])]
+    #[Assert\NotBlank]
+    #[Assert\Url]
+    #[Assert\Length(max: 255)]
     private string $htmlUrl;
 
     #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => 'SSH URL'])]
+    #[Assert\NotBlank]
+    #[Assert\Url]
+    #[Assert\Length(max: 255)]
+    #[Assert\Regex(pattern: '/^(ssh:\/\/)?git@[\w\.-]+:[\w\/-]+\.git$/', message: 'Invalid SSH URL format')]
     private string $sshUrl;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '最后推送时间'])]
-    private \DateTimeImmutable $pushedAt;
+    #[Assert\NotNull]
+    #[Assert\Type(type: '\DateTimeImmutable')]
+    private \DateTimeImmutable $pushTime;
 
     public function getId(): ?int
     {
@@ -65,10 +91,9 @@ class GiteeRepository implements \Stringable
         return $this->application;
     }
 
-    public function setApplication(GiteeApplication $application): self
+    public function setApplication(GiteeApplication $application): void
     {
         $this->application = $application;
-        return $this;
     }
 
     public function getUserId(): string
@@ -76,10 +101,9 @@ class GiteeRepository implements \Stringable
         return $this->userId;
     }
 
-    public function setUserId(string $userId): self
+    public function setUserId(string $userId): void
     {
         $this->userId = $userId;
-        return $this;
     }
 
     public function getFullName(): string
@@ -87,10 +111,9 @@ class GiteeRepository implements \Stringable
         return $this->fullName;
     }
 
-    public function setFullName(string $fullName): self
+    public function setFullName(string $fullName): void
     {
         $this->fullName = $fullName;
-        return $this;
     }
 
     public function getName(): string
@@ -98,10 +121,9 @@ class GiteeRepository implements \Stringable
         return $this->name;
     }
 
-    public function setName(string $name): self
+    public function setName(string $name): void
     {
         $this->name = $name;
-        return $this;
     }
 
     public function getOwner(): string
@@ -109,10 +131,9 @@ class GiteeRepository implements \Stringable
         return $this->owner;
     }
 
-    public function setOwner(string $owner): self
+    public function setOwner(string $owner): void
     {
         $this->owner = $owner;
-        return $this;
     }
 
     public function getDescription(): ?string
@@ -120,10 +141,9 @@ class GiteeRepository implements \Stringable
         return $this->description;
     }
 
-    public function setDescription(?string $description): self
+    public function setDescription(?string $description): void
     {
         $this->description = $description;
-        return $this;
     }
 
     public function getDefaultBranch(): string
@@ -131,10 +151,9 @@ class GiteeRepository implements \Stringable
         return $this->defaultBranch;
     }
 
-    public function setDefaultBranch(string $defaultBranch): self
+    public function setDefaultBranch(string $defaultBranch): void
     {
         $this->defaultBranch = $defaultBranch;
-        return $this;
     }
 
     public function isPrivate(): bool
@@ -142,10 +161,9 @@ class GiteeRepository implements \Stringable
         return $this->private;
     }
 
-    public function setPrivate(bool $private): self
+    public function setPrivate(bool $private): void
     {
         $this->private = $private;
-        return $this;
     }
 
     public function isFork(): bool
@@ -153,10 +171,9 @@ class GiteeRepository implements \Stringable
         return $this->fork;
     }
 
-    public function setFork(bool $fork): self
+    public function setFork(bool $fork): void
     {
         $this->fork = $fork;
-        return $this;
     }
 
     public function getHtmlUrl(): string
@@ -164,10 +181,9 @@ class GiteeRepository implements \Stringable
         return $this->htmlUrl;
     }
 
-    public function setHtmlUrl(string $htmlUrl): self
+    public function setHtmlUrl(string $htmlUrl): void
     {
         $this->htmlUrl = $htmlUrl;
-        return $this;
     }
 
     public function getSshUrl(): string
@@ -175,21 +191,35 @@ class GiteeRepository implements \Stringable
         return $this->sshUrl;
     }
 
-    public function setSshUrl(string $sshUrl): self
+    public function setSshUrl(string $sshUrl): void
     {
         $this->sshUrl = $sshUrl;
-        return $this;
     }
 
+    public function getPushTime(): \DateTimeImmutable
+    {
+        return $this->pushTime;
+    }
+
+    public function setPushTime(\DateTimeImmutable $pushTime): void
+    {
+        $this->pushTime = $pushTime;
+    }
+
+    /**
+     * @deprecated Use getPushTime() instead
+     */
     public function getPushedAt(): \DateTimeImmutable
     {
-        return $this->pushedAt;
+        return $this->pushTime;
     }
 
-    public function setPushedAt(\DateTimeImmutable $pushedAt): self
+    /**
+     * @deprecated Use setPushTime() instead
+     */
+    public function setPushedAt(\DateTimeImmutable $pushedAt): void
     {
-        $this->pushedAt = $pushedAt;
-        return $this;
+        $this->setPushTime($pushedAt);
     }
 
     public function __toString(): string

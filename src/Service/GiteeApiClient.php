@@ -1,15 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GiteeApiBundle\Service;
 
 use GiteeApiBundle\Entity\GiteeApplication;
 use GiteeApiBundle\Exception\GiteeApiException;
 use GiteeApiBundle\Repository\GiteeAccessTokenRepository;
+use Monolog\Attribute\WithMonologChannel;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 
-final class GiteeApiClient
+#[WithMonologChannel(channel: 'gitee_api')]
+final class GiteeApiClient implements GiteeApiClientInterface
 {
     private const API_BASE_URL = 'https://gitee.com/api/v5';
 
@@ -17,15 +23,23 @@ final class GiteeApiClient
 
     public function __construct(
         private readonly GiteeAccessTokenRepository $tokenRepository,
+        private readonly LoggerInterface $logger = new NullLogger(),
     ) {
         $this->client = HttpClient::create();
     }
 
+    /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
     public function request(string $method, string $path, array $options = [], ?string $userId = null, ?GiteeApplication $application = null): array
     {
-        if ($userId !== null && $application !== null) {
+        $startTime = microtime(true);
+        $url = self::API_BASE_URL . $path;
+
+        if (null !== $userId && null !== $application) {
             $token = $this->tokenRepository->findLatestByUserAndApplication($userId, (string) $application->getId());
-            if ($token !== null) {
+            if (null !== $token) {
                 $options['headers'] = array_merge(
                     $options['headers'] ?? [],
                     ['Authorization' => 'Bearer ' . $token->getAccessToken()]
@@ -33,19 +47,52 @@ final class GiteeApiClient
             }
         }
 
+        $this->logger->info('Gitee API request started', [
+            'method' => $method,
+            'url' => $url,
+            'userId' => $userId,
+            'applicationId' => $application?->getId(),
+        ]);
+
         try {
             $response = $this->client->request(
                 $method,
-                self::API_BASE_URL . $path,
+                $url,
                 $options
             );
 
-            return $response->toArray();
+            $data = $response->toArray();
+            $duration = microtime(true) - $startTime;
+
+            $this->logger->info('Gitee API request successful', [
+                'method' => $method,
+                'url' => $url,
+                'userId' => $userId,
+                'applicationId' => $application?->getId(),
+                'statusCode' => $response->getStatusCode(),
+                'duration' => round($duration, 3),
+                'responseSize' => strlen((string) json_encode($data)),
+            ]);
+
+            return $data;
         } catch (\Throwable $e) {
-            throw new GiteeApiException(sprintf('API请求失败: %s', $e->getMessage()), 0, $e);
+            $duration = microtime(true) - $startTime;
+
+            $this->logger->error('Gitee API request failed', [
+                'method' => $method,
+                'url' => $url,
+                'userId' => $userId,
+                'applicationId' => $application?->getId(),
+                'duration' => round($duration, 3),
+                'error' => $e->getMessage(),
+                'errorClass' => get_class($e),
+            ]);
+
+            throw GiteeApiException::create(sprintf('API请求失败: %s', $e->getMessage()), 0, $e);
         }
     }
 
+    /** @return array<string, mixed> */
     public function getUser(string $userId, GiteeApplication $application): array
     {
         return $this->request('GET', '/user', [], $userId, $application);
@@ -54,17 +101,19 @@ final class GiteeApiClient
     /**
      * 获取用户的仓库列表
      *
-     * @param string $userId 用户ID
+     * @param string           $userId      用户ID
      * @param GiteeApplication $application 应用
-     * @param array $params 额外的查询参数
-     * @return array 仓库列表
+     * @param array<string, mixed> $params      额外的查询参数
+     *
+     * @return array<array-key, array<string, mixed>> 仓库列表
+     *
      * @throws GiteeApiException
      */
     public function getRepositories(string $userId, GiteeApplication $application, array $params = []): array
     {
         $token = $this->tokenRepository->findLatestByUserAndApplication($userId, (string) $application->getId());
-        if ($token === null) {
-            throw new GiteeApiException('未找到有效的访问令牌');
+        if (null === $token) {
+            throw GiteeApiException::create('未找到有效的访问令牌');
         }
 
         $defaultParams = [
@@ -81,37 +130,47 @@ final class GiteeApiClient
         do {
             $response = $this->get('/user/repos', $params);
             $data = $response->toArray();
-            if (empty($data)) {
+            if ([] === $data) {
                 break;
             }
 
             $repositories = array_merge($repositories, $data);
-            $params['page']++;
+            ++$params['page'];
         } while (count($data) === $params['per_page']);
 
         return $repositories;
     }
 
+    /** @return array<string, mixed> */
     public function getRepository(string $owner, string $repo, ?string $userId = null, ?GiteeApplication $application = null): array
     {
-        return $this->request('GET', "/repos/$owner/$repo", [], $userId, $application);
+        return $this->request('GET', "/repos/{$owner}/{$repo}", [], $userId, $application);
     }
 
+    /** @return array<array-key, array<string, mixed>> */
     public function getBranches(string $owner, string $repo, ?string $userId = null, ?GiteeApplication $application = null): array
     {
-        return $this->request('GET', "/repos/$owner/$repo/branches", [], $userId, $application);
+        return $this->request('GET', "/repos/{$owner}/{$repo}/branches", [], $userId, $application);
     }
 
+    /**
+     * @param array<string, mixed> $params
+     * @return array<array-key, array<string, mixed>>
+     */
     public function getIssues(string $owner, string $repo, array $params = [], ?string $userId = null, ?GiteeApplication $application = null): array
     {
-        return $this->request('GET', "/repos/$owner/$repo/issues", [
+        return $this->request('GET', "/repos/{$owner}/{$repo}/issues", [
             'query' => $params,
         ], $userId, $application);
     }
 
+    /**
+     * @param array<string, mixed> $params
+     * @return array<array-key, array<string, mixed>>
+     */
     public function getPullRequests(string $owner, string $repo, array $params = [], ?string $userId = null, ?GiteeApplication $application = null): array
     {
-        return $this->request('GET', "/repos/$owner/$repo/pulls", [
+        return $this->request('GET', "/repos/{$owner}/{$repo}/pulls", [
             'query' => $params,
         ], $userId, $application);
     }
@@ -120,20 +179,47 @@ final class GiteeApiClient
      * 发送GET请求
      *
      * @param string $endpoint API端点
-     * @param array $params 查询参数
-     * @return ResponseInterface
+     * @param array<string, mixed> $params   查询参数
+     *
      * @throws GiteeApiException
      */
     private function get(string $endpoint, array $params = []): ResponseInterface
     {
+        $startTime = microtime(true);
+        $url = self::API_BASE_URL . $endpoint;
+
+        $this->logger->info('Gitee API GET request started', [
+            'url' => $url,
+            'params' => $params,
+        ]);
+
         try {
-            $response = $this->client->request('GET', self::API_BASE_URL . $endpoint, [
+            $response = $this->client->request('GET', $url, [
                 'query' => $params,
+            ]);
+
+            $duration = microtime(true) - $startTime;
+
+            $this->logger->info('Gitee API GET request successful', [
+                'url' => $url,
+                'params' => $params,
+                'statusCode' => $response->getStatusCode(),
+                'duration' => round($duration, 3),
             ]);
 
             return $response;
         } catch (\Throwable $e) {
-            throw new GiteeApiException(sprintf('API请求失败: %s', $e->getMessage()), 0, $e);
+            $duration = microtime(true) - $startTime;
+
+            $this->logger->error('Gitee API GET request failed', [
+                'url' => $url,
+                'params' => $params,
+                'duration' => round($duration, 3),
+                'error' => $e->getMessage(),
+                'errorClass' => get_class($e),
+            ]);
+
+            throw GiteeApiException::create(sprintf('API请求失败: %s', $e->getMessage()), 0, $e);
         }
     }
 }

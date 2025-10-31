@@ -2,21 +2,42 @@
 
 namespace GiteeApiBundle\Tests\Entity;
 
-use DateTimeImmutable;
 use GiteeApiBundle\Entity\GiteeAccessToken;
 use GiteeApiBundle\Entity\GiteeApplication;
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use Tourze\PHPUnitDoctrineEntity\AbstractEntityTestCase;
 
-class GiteeAccessTokenTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(GiteeAccessToken::class)]
+final class GiteeAccessTokenTest extends AbstractEntityTestCase
 {
     private GiteeApplication $application;
+
+    protected function createEntity(): object
+    {
+        return new GiteeAccessToken();
+    }
+
+    /**
+     * @return iterable<array{string, mixed}>
+     */
+    public static function propertiesProvider(): iterable
+    {
+        yield 'accessToken' => ['accessToken', 'test_access_token'];
+        yield 'refreshToken' => ['refreshToken', 'test_refresh_token'];
+        yield 'userId' => ['userId', 'user123'];
+        yield 'giteeUsername' => ['giteeUsername', 'test_user'];
+        yield 'expireTime' => ['expireTime', new \DateTimeImmutable('+1 hour')];
+    }
 
     protected function setUp(): void
     {
         $this->application = new GiteeApplication();
-        $this->application->setName('Test App')
-            ->setClientId('client_id')
-            ->setClientSecret('client_secret');
+        $this->application->setName('Test App');
+        $this->application->setClientId('client_id');
+        $this->application->setClientSecret('client_secret');
     }
 
     /**
@@ -29,87 +50,17 @@ class GiteeAccessTokenTest extends TestCase
         $this->assertEquals(0, $token->getId());
     }
 
-    /**
-     * 测试设置和获取应用
-     */
     public function testSetAndGetApplication(): void
     {
         $token = new GiteeAccessToken();
+        $application = new GiteeApplication();
+        $application->setName('Test App');
+        $application->setClientId('client_id');
+        $application->setClientSecret('client_secret');
 
-        $result = $token->setApplication($this->application);
+        $token->setApplication($application);
 
-        $this->assertSame($token, $result);
-        $this->assertSame($this->application, $token->getApplication());
-    }
-
-    /**
-     * 测试设置和获取用户ID
-     */
-    public function testSetAndGetUserId(): void
-    {
-        $token = new GiteeAccessToken();
-        $userId = "user123";
-
-        $result = $token->setUserId($userId);
-
-        $this->assertSame($token, $result);
-        $this->assertEquals($userId, $token->getUserId());
-    }
-
-    /**
-     * 测试设置和获取访问令牌
-     */
-    public function testSetAndGetAccessToken(): void
-    {
-        $token = new GiteeAccessToken();
-        $accessToken = "access_token_123";
-
-        $result = $token->setAccessToken($accessToken);
-
-        $this->assertSame($token, $result);
-        $this->assertEquals($accessToken, $token->getAccessToken());
-    }
-
-    /**
-     * 测试设置和获取刷新令牌
-     */
-    public function testSetAndGetRefreshToken(): void
-    {
-        $token = new GiteeAccessToken();
-        $refreshToken = "refresh_token_123";
-
-        $result = $token->setRefreshToken($refreshToken);
-
-        $this->assertSame($token, $result);
-        $this->assertEquals($refreshToken, $token->getRefreshToken());
-    }
-
-    /**
-     * 测试设置和获取令牌过期时间
-     */
-    public function testSetAndGetExpiresAt(): void
-    {
-        $token = new GiteeAccessToken();
-        $expiresAt = new DateTimeImmutable('+1 hour');
-
-        $result = $token->setExpiresAt($expiresAt);
-
-        $this->assertSame($token, $result);
-        $this->assertEquals($expiresAt, $token->getExpiresAt());
-    }
-
-    /**
-     * 测试设置和获取Gitee用户名
-     */
-    public function testSetAndGetGiteeUsername(): void
-    {
-        $token = new GiteeAccessToken();
-        $username = "gitee_user";
-
-        $result = $token->setGiteeUsername($username);
-
-        $this->assertSame($token, $result);
-        $this->assertEquals($username, $token->getGiteeUsername());
+        $this->assertSame($application, $token->getApplication());
     }
 
     /**

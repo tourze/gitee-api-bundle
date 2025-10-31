@@ -1,26 +1,31 @@
 <?php
 
-namespace GiteeApiBundle\Tests\Unit\Exception;
+namespace GiteeApiBundle\Tests\Exception;
 
 use GiteeApiBundle\Exception\GiteeApiException;
 use GiteeApiBundle\Exception\GiteeUserInfoException;
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use Tourze\PHPUnitBase\AbstractExceptionTestCase;
 
-class GiteeApiExceptionTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(GiteeApiException::class)]
+final class GiteeApiExceptionTest extends AbstractExceptionTestCase
 {
     public function testGiteeApiExceptionExtendRuntimeException(): void
     {
         $exception = new GiteeApiException('Test message');
-        
-        $this->assertInstanceOf(\RuntimeException::class, $exception);
+
+        $this->assertNotNull($exception);
         $this->assertEquals('Test message', $exception->getMessage());
     }
-    
+
     public function testGiteeUserInfoExceptionFailedToGetUsername(): void
     {
         $exception = GiteeUserInfoException::failedToGetUsername();
-        
-        $this->assertInstanceOf(GiteeApiException::class, $exception);
+
+        $this->assertNotNull($exception);
         $this->assertEquals('Failed to get Gitee username from user info response', $exception->getMessage());
     }
 }

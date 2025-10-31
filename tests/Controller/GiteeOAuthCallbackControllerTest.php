@@ -2,110 +2,138 @@
 
 namespace GiteeApiBundle\Tests\Controller;
 
-use Doctrine\ORM\EntityManagerInterface;
 use GiteeApiBundle\Controller\GiteeOAuthCallbackController;
 use GiteeApiBundle\Entity\GiteeApplication;
-use GiteeApiBundle\Repository\GiteeAccessTokenRepository;
-use GiteeApiBundle\Service\GiteeOAuthService;
-use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
-use Psr\SimpleCache\CacheInterface;
-use Symfony\Component\HttpFoundation\Request;
+use GiteeApiBundle\Enum\GiteeScope;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Tourze\PHPUnitSymfonyWebTest\AbstractWebTestCase;
 
-class GiteeOAuthCallbackControllerTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(GiteeOAuthCallbackController::class)]
+#[RunTestsInSeparateProcesses]
+final class GiteeOAuthCallbackControllerTest extends AbstractWebTestCase
 {
-    private GiteeOAuthCallbackController $controller;
-    private GiteeOAuthService $oauthService;
-    private MockObject $urlGenerator;
-    private MockObject $httpClient;
-    private MockObject $entityManager;
-    private MockObject $tokenRepository;
-    private MockObject $cache;
-    private GiteeApplication $application;
-
-    /**
-     * 测试构造函数
-     */
-    public function testConstructor(): void
+    public function testCallbackWithoutCode(): void
     {
-        $this->assertInstanceOf(GiteeOAuthCallbackController::class, $this->controller);
-    }
+        $client = self::createClientWithDatabase();
 
-    /**
-     * 测试没有提供授权码的情况
-     */
-    public function testInvoke_withoutCode(): void
-    {
-        $request = new Request();
+        $application = $this->createGiteeApplication();
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage('No authorization code provided');
-
-        $this->controller->__invoke($request, $this->application);
+        $client->request('GET', '/gitee/oauth/callback/' . $application->getId());
     }
 
-    /**
-     * 测试提供空字符串授权码的情况
-     */
-    public function testInvoke_withEmptyCode(): void
+    public function testCallbackWithEmptyCode(): void
     {
-        $request = new Request();
-        $request->query->set('code', '');
+        $client = self::createClientWithDatabase();
+
+        $application = $this->createGiteeApplication();
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage('No authorization code provided');
-
-        $this->controller->__invoke($request, $this->application);
+        $client->request('GET', '/gitee/oauth/callback/' . $application->getId(), ['code' => '']);
     }
 
-    /**
-     * 测试提供非字符串授权码的情况
-     */
-    public function testInvoke_withNonStringCode(): void
+    public function testCallbackWithUnauthorizedAccess(): void
     {
-        $request = new Request();
-        $request->query->set('code', 123); // 数字而不是字符串
+        $client = self::createClientWithDatabase();
+
+        $this->expectException(NotFoundHttpException::class);
+        $client->request('GET', '/gitee/oauth/callback/999');
+    }
+
+    public function testCallbackPostMethod(): void
+    {
+        $client = self::createClientWithDatabase();
+
+        $application = $this->createGiteeApplication();
+
+        $this->expectException(MethodNotAllowedHttpException::class);
+        $client->request('POST', '/gitee/oauth/callback/' . $application->getId());
+    }
+
+    public function testCallbackPutMethod(): void
+    {
+        $client = self::createClientWithDatabase();
+
+        $application = $this->createGiteeApplication();
+
+        $this->expectException(MethodNotAllowedHttpException::class);
+        $client->request('PUT', '/gitee/oauth/callback/' . $application->getId());
+    }
+
+    public function testCallbackDeleteMethod(): void
+    {
+        $client = self::createClientWithDatabase();
+
+        $application = $this->createGiteeApplication();
+
+        $this->expectException(MethodNotAllowedHttpException::class);
+        $client->request('DELETE', '/gitee/oauth/callback/' . $application->getId());
+    }
+
+    public function testCallbackPatchMethod(): void
+    {
+        $client = self::createClientWithDatabase();
+
+        $application = $this->createGiteeApplication();
+
+        $this->expectException(MethodNotAllowedHttpException::class);
+        $client->request('PATCH', '/gitee/oauth/callback/' . $application->getId());
+    }
+
+    public function testCallbackHeadMethod(): void
+    {
+        $client = self::createClientWithDatabase();
+
+        $application = $this->createGiteeApplication();
 
         $this->expectException(NotFoundHttpException::class);
         $this->expectExceptionMessage('No authorization code provided');
-
-        $this->controller->__invoke($request, $this->application);
+        $client->request('HEAD', '/gitee/oauth/callback/' . $application->getId());
     }
 
-
-    protected function setUp(): void
+    public function testCallbackOptionsMethod(): void
     {
-        // 创建依赖的 mock
-        $this->httpClient = $this->createMock(HttpClientInterface::class);
-        $this->entityManager = $this->createMock(EntityManagerInterface::class);
-        $this->tokenRepository = $this->createMock(GiteeAccessTokenRepository::class);
-        $this->cache = $this->createMock(CacheInterface::class);
-        $this->urlGenerator = $this->createMock(UrlGeneratorInterface::class);
+        $client = self::createClientWithDatabase();
 
-        // 创建真实的 GiteeOAuthService
-        $this->oauthService = new GiteeOAuthService(
-            $this->httpClient,
-            $this->entityManager,
-            $this->tokenRepository,
-            $this->cache
-        );
+        $application = $this->createGiteeApplication();
 
-        // 创建控制器实例
-        $this->controller = new GiteeOAuthCallbackController($this->oauthService, $this->urlGenerator);
+        $this->expectException(MethodNotAllowedHttpException::class);
+        $client->request('OPTIONS', '/gitee/oauth/callback/' . $application->getId());
+    }
 
-        // 创建应用实例
-        $this->application = new GiteeApplication();
-        $this->application->setName('Test App')
-            ->setClientId('client_id')
-            ->setClientSecret('client_secret')
-            ->setScopes([]);
+    #[DataProvider('provideNotAllowedMethods')]
+    public function testMethodNotAllowed(string $method): void
+    {
+        $client = self::createClientWithDatabase();
 
-        // 使用反射设置 ID
-        $reflectionProperty = new \ReflectionProperty(GiteeApplication::class, 'id');
-        $reflectionProperty->setAccessible(true);
-        $reflectionProperty->setValue($this->application, 1);
+        $application = $this->createGiteeApplication();
+
+        // Test the HTTP method - expect MethodNotAllowedHttpException
+        $this->expectException(MethodNotAllowedHttpException::class);
+        $client->request($method, '/gitee/oauth/callback/' . $application->getId());
+    }
+
+    private function createGiteeApplication(): GiteeApplication
+    {
+        $application = new GiteeApplication();
+        $application->setName('Test App');
+        $application->setClientId('test_client_id');
+        $application->setClientSecret('test_client_secret');
+        $application->setScopes([GiteeScope::USER, GiteeScope::PROJECTS]);
+
+        self::getEntityManager()->persist($application);
+        self::getEntityManager()->flush();
+
+        return $application;
     }
 }

@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GiteeApiBundle\Entity;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use GiteeApiBundle\Repository\GiteeAccessTokenRepository;
+use Symfony\Component\Validator\Constraints as Assert;
 use Tourze\DoctrineTimestampBundle\Traits\TimestampableAware;
 
 #[ORM\Entity(repositoryClass: GiteeAccessTokenRepository::class)]
@@ -12,28 +15,36 @@ use Tourze\DoctrineTimestampBundle\Traits\TimestampableAware;
 class GiteeAccessToken implements \Stringable
 {
     use TimestampableAware;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER, options: ['comment' => 'ID'])]
-    private ?int $id = 0;
+    private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: GiteeApplication::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private GiteeApplication $application;
 
     #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '用户ID'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     private string $userId;
 
     #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => 'Access Token'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     private string $accessToken;
 
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true, options: ['comment' => 'Refresh Token'])]
+    #[Assert\Length(max: 255)]
     private ?string $refreshToken = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, options: ['comment' => '过期时间'])]
-    private ?\DateTimeImmutable $expiresAt = null;
+    #[Assert\DateTime]
+    private ?\DateTimeImmutable $expireTime = null;
 
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true, options: ['comment' => 'Gitee用户名'])]
+    #[Assert\Length(max: 255)]
     private ?string $giteeUsername = null;
 
     public function getId(): ?int
@@ -46,10 +57,9 @@ class GiteeAccessToken implements \Stringable
         return $this->application;
     }
 
-    public function setApplication(GiteeApplication $application): self
+    public function setApplication(GiteeApplication $application): void
     {
         $this->application = $application;
-        return $this;
     }
 
     public function getUserId(): string
@@ -57,10 +67,9 @@ class GiteeAccessToken implements \Stringable
         return $this->userId;
     }
 
-    public function setUserId(string $userId): self
+    public function setUserId(string $userId): void
     {
         $this->userId = $userId;
-        return $this;
     }
 
     public function getAccessToken(): string
@@ -68,10 +77,9 @@ class GiteeAccessToken implements \Stringable
         return $this->accessToken;
     }
 
-    public function setAccessToken(string $accessToken): self
+    public function setAccessToken(string $accessToken): void
     {
         $this->accessToken = $accessToken;
-        return $this;
     }
 
     public function getRefreshToken(): ?string
@@ -79,21 +87,35 @@ class GiteeAccessToken implements \Stringable
         return $this->refreshToken;
     }
 
-    public function setRefreshToken(?string $refreshToken): self
+    public function setRefreshToken(?string $refreshToken): void
     {
         $this->refreshToken = $refreshToken;
-        return $this;
     }
 
+    public function getExpireTime(): ?\DateTimeImmutable
+    {
+        return $this->expireTime;
+    }
+
+    public function setExpireTime(?\DateTimeImmutable $expireTime): void
+    {
+        $this->expireTime = $expireTime;
+    }
+
+    /**
+     * @deprecated Use getExpireTime() instead
+     */
     public function getExpiresAt(): ?\DateTimeImmutable
     {
-        return $this->expiresAt;
+        return $this->expireTime;
     }
 
-    public function setExpiresAt(?\DateTimeImmutable $expiresAt): self
+    /**
+     * @deprecated Use setExpireTime() instead
+     */
+    public function setExpiresAt(?\DateTimeImmutable $expiresAt): void
     {
-        $this->expiresAt = $expiresAt;
-        return $this;
+        $this->setExpireTime($expiresAt);
     }
 
     public function getGiteeUsername(): ?string
@@ -101,10 +123,9 @@ class GiteeAccessToken implements \Stringable
         return $this->giteeUsername;
     }
 
-    public function setGiteeUsername(?string $giteeUsername): self
+    public function setGiteeUsername(?string $giteeUsername): void
     {
         $this->giteeUsername = $giteeUsername;
-        return $this;
     }
 
     public function __toString(): string

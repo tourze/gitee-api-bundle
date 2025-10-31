@@ -4,107 +4,48 @@ namespace GiteeApiBundle\Tests\Entity;
 
 use GiteeApiBundle\Entity\GiteeApplication;
 use GiteeApiBundle\Enum\GiteeScope;
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use Tourze\PHPUnitDoctrineEntity\AbstractEntityTestCase;
 
-class GiteeApplicationTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(GiteeApplication::class)]
+final class GiteeApplicationTest extends AbstractEntityTestCase
 {
+    protected function createEntity(): object
+    {
+        return new GiteeApplication();
+    }
+
+    /**
+     * @return iterable<array{string, mixed}>
+     */
+    public static function propertiesProvider(): iterable
+    {
+        yield 'name' => ['name', 'Test Application'];
+        yield 'clientId' => ['clientId', 'test_client_id'];
+        yield 'clientSecret' => ['clientSecret', 'test_client_secret'];
+        yield 'homepage' => ['homepage', 'https://example.com'];
+        yield 'description' => ['description', 'Test description'];
+        yield 'scopes' => ['scopes', [GiteeScope::USER, GiteeScope::PROJECTS]];
+    }
+
+    protected function setUp(): void
+    {
+        // 集成测试设置逻辑
+    }
+
     /**
      * 测试构造函数正确初始化默认属性
      */
-    public function testConstructor_withDefaults(): void
+    public function testConstructorWithDefaults(): void
     {
         $application = new GiteeApplication();
 
         // 不测试默认作用域，因为可能会有问题
         // $this->assertEquals(GiteeScope::getDefaultScopes(), $application->getScopes());
         $this->assertEquals(0, $application->getId());
-    }
-
-    /**
-     * 测试设置和获取名称
-     */
-    public function testSetAndGetName(): void
-    {
-        $application = new GiteeApplication();
-        $name = "测试应用";
-
-        $result = $application->setName($name);
-
-        $this->assertSame($application, $result);
-        $this->assertEquals($name, $application->getName());
-    }
-
-    /**
-     * 测试设置和获取客户端ID
-     */
-    public function testSetAndGetClientId(): void
-    {
-        $application = new GiteeApplication();
-        $clientId = "test_client_id";
-
-        $result = $application->setClientId($clientId);
-
-        $this->assertSame($application, $result);
-        $this->assertEquals($clientId, $application->getClientId());
-    }
-
-    /**
-     * 测试设置和获取客户端密钥
-     */
-    public function testSetAndGetClientSecret(): void
-    {
-        $application = new GiteeApplication();
-        $clientSecret = "test_client_secret";
-
-        $result = $application->setClientSecret($clientSecret);
-
-        $this->assertSame($application, $result);
-        $this->assertEquals($clientSecret, $application->getClientSecret());
-    }
-
-    /**
-     * 测试设置和获取应用主页
-     */
-    public function testSetAndGetHomepage(): void
-    {
-        $application = new GiteeApplication();
-        $homepage = "https://example.com";
-
-        $result = $application->setHomepage($homepage);
-
-        $this->assertSame($application, $result);
-        $this->assertEquals($homepage, $application->getHomepage());
-    }
-
-    /**
-     * 测试设置和获取应用描述
-     */
-    public function testSetAndGetDescription(): void
-    {
-        $application = new GiteeApplication();
-        $description = "这是一个测试应用描述";
-
-        $result = $application->setDescription($description);
-
-        $this->assertSame($application, $result);
-        $this->assertEquals($description, $application->getDescription());
-    }
-
-    /**
-     * 测试设置和获取作用域
-     */
-    public function testSetAndGetScopes(): void
-    {
-        $application = new GiteeApplication();
-        $scopes = [
-            GiteeScope::USER,
-            GiteeScope::PROJECTS,
-        ];
-
-        $result = $application->setScopes($scopes);
-
-        $this->assertSame($application, $result);
-        $this->assertEquals($scopes, $application->getScopes());
     }
 
     /**

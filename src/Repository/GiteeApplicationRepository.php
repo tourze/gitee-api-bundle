@@ -1,17 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GiteeApiBundle\Repository;
 
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use GiteeApiBundle\Entity\GiteeApplication;
+use Tourze\PHPUnitSymfonyKernelTest\Attribute\AsRepository;
 
 /**
- * @method GiteeApplication|null find($id, $lockMode = null, $lockVersion = null)
- * @method GiteeApplication|null findOneBy(array $criteria, array $orderBy = null)
- * @method GiteeApplication[] findAll()
- * @method GiteeApplication[] findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @extends ServiceEntityRepository<GiteeApplication>
  */
+#[AsRepository(entityClass: GiteeApplication::class)]
 class GiteeApplicationRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -21,6 +22,26 @@ class GiteeApplicationRepository extends ServiceEntityRepository
 
     public function findByClientId(string $clientId): ?GiteeApplication
     {
-        return $this->findOneBy(['clientId' => $clientId]);
+        $result = $this->findOneBy(['clientId' => $clientId]);
+
+        return $result instanceof GiteeApplication ? $result : null;
+    }
+
+    public function save(GiteeApplication $entity, bool $flush = true): void
+    {
+        $this->getEntityManager()->persist($entity);
+
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
+    }
+
+    public function remove(GiteeApplication $entity, bool $flush = true): void
+    {
+        $this->getEntityManager()->remove($entity);
+
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
     }
 }

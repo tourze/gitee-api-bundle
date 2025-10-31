@@ -1,17 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GiteeApiBundle\Repository;
 
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use GiteeApiBundle\Entity\GiteeAccessToken;
+use Tourze\PHPUnitSymfonyKernelTest\Attribute\AsRepository;
 
 /**
- * @method GiteeAccessToken|null find($id, $lockMode = null, $lockVersion = null)
- * @method GiteeAccessToken|null findOneBy(array $criteria, array $orderBy = null)
- * @method GiteeAccessToken[] findAll()
- * @method GiteeAccessToken[] findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @extends ServiceEntityRepository<GiteeAccessToken>
  */
+#[AsRepository(entityClass: GiteeAccessToken::class)]
 class GiteeAccessTokenRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -21,7 +22,9 @@ class GiteeAccessTokenRepository extends ServiceEntityRepository
 
     public function findByUserId(string $userId): ?GiteeAccessToken
     {
-        return $this->findOneBy(['userId' => $userId]);
+        $result = $this->findOneBy(['userId' => $userId]);
+
+        return $result instanceof GiteeAccessToken ? $result : null;
     }
 
     public function findLatestByUserAndApplication(string $userId, string $applicationId): ?GiteeAccessToken
@@ -34,6 +37,25 @@ class GiteeAccessTokenRepository extends ServiceEntityRepository
             ->setParameter('applicationId', $applicationId)
             ->setMaxResults(1)
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getOneOrNullResult()
+        ;
+    }
+
+    public function save(GiteeAccessToken $entity, bool $flush = true): void
+    {
+        $this->getEntityManager()->persist($entity);
+
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
+    }
+
+    public function remove(GiteeAccessToken $entity, bool $flush = true): void
+    {
+        $this->getEntityManager()->remove($entity);
+
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
     }
 }

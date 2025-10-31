@@ -1,15 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GiteeApiBundle\Service;
 
 use GiteeApiBundle\Controller\GiteeOAuthCallbackController;
 use GiteeApiBundle\Controller\GiteeOAuthConnectController;
 use Symfony\Bundle\FrameworkBundle\Routing\AttributeRouteControllerLoader;
 use Symfony\Component\Config\Loader\Loader;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 use Symfony\Component\Routing\RouteCollection;
 use Tourze\RoutingAutoLoaderBundle\Service\RoutingAutoLoaderInterface;
 
+#[Autoconfigure(public: true)]
 #[AutoconfigureTag(name: 'routing.loader')]
 class AttributeControllerLoader extends Loader implements RoutingAutoLoaderInterface
 {
@@ -31,6 +35,7 @@ class AttributeControllerLoader extends Loader implements RoutingAutoLoaderInter
         $collection = new RouteCollection();
         $collection->addCollection($this->controllerLoader->load(GiteeOAuthCallbackController::class));
         $collection->addCollection($this->controllerLoader->load(GiteeOAuthConnectController::class));
+
         return $collection;
     }
 

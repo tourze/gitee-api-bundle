@@ -2,177 +2,151 @@
 
 namespace GiteeApiBundle\Tests\Controller;
 
-use Doctrine\ORM\EntityManagerInterface;
 use GiteeApiBundle\Controller\GiteeOAuthConnectController;
 use GiteeApiBundle\Entity\GiteeApplication;
-use GiteeApiBundle\Repository\GiteeAccessTokenRepository;
-use GiteeApiBundle\Service\GiteeOAuthService;
-use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
-use Psr\SimpleCache\CacheInterface;
-use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
+use GiteeApiBundle\Enum\GiteeScope;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Tourze\PHPUnitSymfonyWebTest\AbstractWebTestCase;
 
-class GiteeOAuthConnectControllerTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(GiteeOAuthConnectController::class)]
+#[RunTestsInSeparateProcesses]
+final class GiteeOAuthConnectControllerTest extends AbstractWebTestCase
 {
-    private GiteeOAuthConnectController $controller;
-    private GiteeOAuthService $oauthService;
-    private MockObject $urlGenerator;
-    private MockObject $httpClient;
-    private MockObject $entityManager;
-    private MockObject $tokenRepository;
-    private MockObject $cache;
-    private GiteeApplication $application;
-
-    /**
-     * 测试构造函数
-     */
-    public function testConstructor(): void
+    public function testConnectRedirectsToGiteeOAuth(): void
     {
-        $this->assertInstanceOf(GiteeOAuthConnectController::class, $this->controller);
+        $client = self::createClientWithDatabase();
+
+        $application = $this->createGiteeApplication();
+
+        $client->request('GET', '/gitee/oauth/connect/' . $application->getId());
+
+        $this->assertEquals(Response::HTTP_FOUND, $client->getResponse()->getStatusCode());
+        $this->assertTrue($client->getResponse()->isRedirect());
+
+        $location = $client->getResponse()->headers->get('Location');
+        $this->assertNotNull($location);
+        $this->assertStringContainsString('gitee.com/oauth/authorize', $location);
     }
 
-    /**
-     * 测试连接方法的基本功能
-     */
-    public function testInvoke_basicFunctionality(): void
+    public function testConnectWithCallbackUrl(): void
     {
-        $request = new Request();
-        $callbackUrl = 'https://example.com/custom-callback';
-        $request->query->set('callbackUrl', $callbackUrl);
+        $client = self::createClientWithDatabase();
 
-        $redirectUrl = 'https://gitee.com/oauth/callback';
+        $application = $this->createGiteeApplication();
 
-        // 配置 URL 生成器
-        $this->urlGenerator->expects($this->once())
-            ->method('generate')
-            ->with(
-                'gitee_oauth_callback',
-                ['applicationId' => 1],
-                UrlGeneratorInterface::ABSOLUTE_URL
-            )
-            ->willReturn($redirectUrl);
+        $client->request('GET', '/gitee/oauth/connect/' . $application->getId(), [
+            'callbackUrl' => 'https://example.com/callback',
+        ]);
 
-        // 配置缓存
-        $this->cache->expects($this->once())
-            ->method('set')
-            ->with(
-                $this->matchesRegularExpression('/^gitee_oauth_state_[a-f0-9]{32}$/'),
-                $callbackUrl,
-                3600
-            );
+        $this->assertEquals(Response::HTTP_FOUND, $client->getResponse()->getStatusCode());
+        $this->assertTrue($client->getResponse()->isRedirect());
 
-        $response = $this->controller->__invoke($request, $this->application);
-
-        $this->assertInstanceOf(RedirectResponse::class, $response);
-        $targetUrl = $response->getTargetUrl();
-        $this->assertStringContainsString('https://gitee.com/oauth/authorize', $targetUrl);
-        $this->assertStringContainsString('client_id=client_id', $targetUrl);
-        $this->assertStringContainsString('redirect_uri=' . urlencode($redirectUrl), $targetUrl);
+        $location = $client->getResponse()->headers->get('Location');
+        $this->assertNotNull($location);
+        $this->assertStringContainsString('gitee.com/oauth/authorize', $location);
+        $this->assertStringContainsString('state=', $location);
     }
 
-    /**
-     * 测试连接方法，没有提供回调URL的情况
-     */
-    public function testInvoke_withoutCallbackUrl(): void
+    public function testConnectWithUnauthorizedAccess(): void
     {
-        $request = new Request();
+        $client = self::createClientWithDatabase();
 
-        $redirectUrl = 'https://gitee.com/oauth/callback';
-
-        // 配置 URL 生成器
-        $this->urlGenerator->expects($this->once())
-            ->method('generate')
-            ->with(
-                'gitee_oauth_callback',
-                ['applicationId' => 1],
-                UrlGeneratorInterface::ABSOLUTE_URL
-            )
-            ->willReturn($redirectUrl);
-
-        // 配置缓存 - 没有回调URL时不应该调用 set
-        $this->cache->expects($this->never())
-            ->method('set');
-
-        $response = $this->controller->__invoke($request, $this->application);
-
-        $this->assertInstanceOf(RedirectResponse::class, $response);
-        $targetUrl = $response->getTargetUrl();
-        $this->assertStringContainsString('https://gitee.com/oauth/authorize', $targetUrl);
-        $this->assertStringContainsString('client_id=client_id', $targetUrl);
-        $this->assertStringContainsString('redirect_uri=' . urlencode($redirectUrl), $targetUrl);
+        $this->expectException(NotFoundHttpException::class);
+        $client->request('GET', '/gitee/oauth/connect/999');
     }
 
-    /**
-     * 测试连接方法，提供空字符串回调URL的情况
-     */
-    public function testInvoke_withEmptyCallbackUrl(): void
+    public function testConnectPostMethod(): void
     {
-        $request = new Request();
-        $request->query->set('callbackUrl', ''); // 空字符串
+        $client = self::createClientWithDatabase();
 
-        $redirectUrl = 'https://gitee.com/oauth/callback';
+        $application = $this->createGiteeApplication();
 
-        // 配置 URL 生成器
-        $this->urlGenerator->expects($this->once())
-            ->method('generate')
-            ->with(
-                'gitee_oauth_callback',
-                ['applicationId' => 1],
-                UrlGeneratorInterface::ABSOLUTE_URL
-            )
-            ->willReturn($redirectUrl);
-
-        // 配置缓存 - 空字符串会被当作有效的回调URL
-        $this->cache->expects($this->once())
-            ->method('set')
-            ->with(
-                $this->matchesRegularExpression('/^gitee_oauth_state_[a-f0-9]{32}$/'),
-                '',
-                3600
-            );
-
-        $response = $this->controller->__invoke($request, $this->application);
-
-        $this->assertInstanceOf(RedirectResponse::class, $response);
-        $targetUrl = $response->getTargetUrl();
-        $this->assertStringContainsString('https://gitee.com/oauth/authorize', $targetUrl);
-        $this->assertStringContainsString('client_id=client_id', $targetUrl);
-        $this->assertStringContainsString('redirect_uri=' . urlencode($redirectUrl), $targetUrl);
+        $this->expectException(MethodNotAllowedHttpException::class);
+        $client->request('POST', '/gitee/oauth/connect/' . $application->getId());
     }
 
-    protected function setUp(): void
+    public function testConnectPutMethod(): void
     {
-        // 创建依赖的 mock
-        $this->httpClient = $this->createMock(HttpClientInterface::class);
-        $this->entityManager = $this->createMock(EntityManagerInterface::class);
-        $this->tokenRepository = $this->createMock(GiteeAccessTokenRepository::class);
-        $this->cache = $this->createMock(CacheInterface::class);
-        $this->urlGenerator = $this->createMock(UrlGeneratorInterface::class);
+        $client = self::createClientWithDatabase();
 
-        // 创建真实的 GiteeOAuthService
-        $this->oauthService = new GiteeOAuthService(
-            $this->httpClient,
-            $this->entityManager,
-            $this->tokenRepository,
-            $this->cache
-        );
+        $application = $this->createGiteeApplication();
 
-        // 创建控制器实例
-        $this->controller = new GiteeOAuthConnectController($this->oauthService, $this->urlGenerator);
+        $this->expectException(MethodNotAllowedHttpException::class);
+        $client->request('PUT', '/gitee/oauth/connect/' . $application->getId());
+    }
 
-        // 创建应用实例
-        $this->application = new GiteeApplication();
-        $this->application->setName('Test App')
-            ->setClientId('client_id')
-            ->setClientSecret('client_secret')
-            ->setScopes([]);
+    public function testConnectDeleteMethod(): void
+    {
+        $client = self::createClientWithDatabase();
 
-        // 使用反射设置 ID
-        $reflectionProperty = new \ReflectionProperty(GiteeApplication::class, 'id');
-        $reflectionProperty->setAccessible(true);
-        $reflectionProperty->setValue($this->application, 1);
+        $application = $this->createGiteeApplication();
+
+        $this->expectException(MethodNotAllowedHttpException::class);
+        $client->request('DELETE', '/gitee/oauth/connect/' . $application->getId());
+    }
+
+    public function testConnectPatchMethod(): void
+    {
+        $client = self::createClientWithDatabase();
+
+        $application = $this->createGiteeApplication();
+
+        $this->expectException(MethodNotAllowedHttpException::class);
+        $client->request('PATCH', '/gitee/oauth/connect/' . $application->getId());
+    }
+
+    public function testConnectHeadMethod(): void
+    {
+        $client = self::createClientWithDatabase();
+
+        $application = $this->createGiteeApplication();
+
+        $client->request('HEAD', '/gitee/oauth/connect/' . $application->getId());
+
+        $this->assertEquals(Response::HTTP_FOUND, $client->getResponse()->getStatusCode());
+    }
+
+    public function testConnectOptionsMethod(): void
+    {
+        $client = self::createClientWithDatabase();
+
+        $application = $this->createGiteeApplication();
+
+        $this->expectException(MethodNotAllowedHttpException::class);
+        $client->request('OPTIONS', '/gitee/oauth/connect/' . $application->getId());
+    }
+
+    #[DataProvider('provideNotAllowedMethods')]
+    public function testMethodNotAllowed(string $method): void
+    {
+        $client = self::createClientWithDatabase();
+
+        $application = $this->createGiteeApplication();
+
+        // Test the HTTP method - expect MethodNotAllowedHttpException
+        $this->expectException(MethodNotAllowedHttpException::class);
+        $client->request($method, '/gitee/oauth/connect/' . $application->getId());
+    }
+
+    private function createGiteeApplication(): GiteeApplication
+    {
+        $application = new GiteeApplication();
+        $application->setName('Test App');
+        $application->setClientId('test_client_id');
+        $application->setClientSecret('test_client_secret');
+        $application->setScopes([GiteeScope::USER, GiteeScope::PROJECTS]);
+
+        self::getEntityManager()->persist($application);
+        self::getEntityManager()->flush();
+
+        return $application;
     }
 }

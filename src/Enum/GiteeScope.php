@@ -1,14 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GiteeApiBundle\Enum;
 
+use Tourze\EnumExtra\BadgeInterface;
 use Tourze\EnumExtra\Itemable;
 use Tourze\EnumExtra\ItemTrait;
 use Tourze\EnumExtra\Labelable;
 use Tourze\EnumExtra\Selectable;
 use Tourze\EnumExtra\SelectTrait;
 
-enum GiteeScope: string implements Itemable, Labelable, Selectable
+enum GiteeScope: string implements BadgeInterface, Itemable, Labelable, Selectable
 {
     use ItemTrait;
     use SelectTrait;
@@ -22,6 +25,7 @@ enum GiteeScope: string implements Itemable, Labelable, Selectable
     case GROUPS = 'groups';
     case HOOKS = 'hook';
 
+    /** @return array<int, self> */
     public static function getDefaultScopes(): array
     {
         return [
@@ -35,10 +39,11 @@ enum GiteeScope: string implements Itemable, Labelable, Selectable
 
     /**
      * 将作用域数组转换为空格分隔的字符串
+     * @param array<int, self> $scopes
      */
     public static function toString(array $scopes): string
     {
-        return implode(' ', array_map(fn(self $scope) => $scope->value, $scopes));
+        return implode(' ', array_map(fn (self $scope) => $scope->value, $scopes));
     }
 
     public function getLabel(): string
@@ -53,6 +58,21 @@ enum GiteeScope: string implements Itemable, Labelable, Selectable
             self::GISTS => '代码片段',
             self::GROUPS => '组织管理',
             self::HOOKS => 'Webhook',
+        };
+    }
+
+    public function getBadge(): string
+    {
+        return match ($this) {
+            self::USER => self::PRIMARY,
+            self::PROJECTS => self::SUCCESS,
+            self::PULL_REQUESTS => self::INFO,
+            self::ISSUES => self::WARNING,
+            self::NOTES => self::SECONDARY,
+            self::ENTERPRISES => self::DARK,
+            self::GISTS => self::LIGHT,
+            self::GROUPS => self::INFO,
+            self::HOOKS => self::DANGER,
         };
     }
 }
