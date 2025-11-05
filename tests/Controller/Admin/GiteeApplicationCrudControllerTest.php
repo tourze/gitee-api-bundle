@@ -24,7 +24,7 @@ final class GiteeApplicationCrudControllerTest extends AbstractEasyAdminControll
 {
     private KernelBrowser $client;
 
-    protected function onAfterSetUp(): void
+    protected function afterEasyAdminSetUp(): void
     {
         $this->client = self::createClientWithDatabase();
         self::getClient($this->client);
