@@ -55,6 +55,5 @@
     "psr-4": {
       "GiteeApiBundle\\Tests\\": "tests"
     }
-  },
-  "version": "1.0.0"
+  }
 }
