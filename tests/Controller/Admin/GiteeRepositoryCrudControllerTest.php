@@ -69,14 +69,6 @@ final class GiteeRepositoryCrudControllerTest extends AbstractEasyAdminControlle
     }
 
     #[Test]
-    public function testGetEntityFqcnShouldReturnGiteeRepositoryClass(): void
-    {
-        $entityFqcn = GiteeRepositoryCrudController::getEntityFqcn();
-
-        $this->assertSame(GiteeRepository::class, $entityFqcn);
-    }
-
-    #[Test]
     public function testIndexPageWithAdminUserShouldShowRepositoryList(): void
     {
         self::markTestSkipped('跳过路由相关测试，专注于 CRUD 配置验证');

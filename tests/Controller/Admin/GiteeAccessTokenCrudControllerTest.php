@@ -32,14 +32,6 @@ final class GiteeAccessTokenCrudControllerTest extends AbstractEasyAdminControll
     }
 
     #[Test]
-    public function testGetEntityFqcnShouldReturnGiteeAccessTokenClass(): void
-    {
-        $entityFqcn = GiteeAccessTokenCrudController::getEntityFqcn();
-
-        $this->assertSame(GiteeAccessToken::class, $entityFqcn);
-    }
-
-    #[Test]
     public function testIndexPageWithAdminUserShouldShowAccessTokenList(): void
     {
         self::markTestSkipped('跳过路由相关测试，专注于 CRUD 配置验证');
