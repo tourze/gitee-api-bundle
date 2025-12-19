@@ -6,7 +6,7 @@ namespace GiteeApiBundle\DependencyInjection;
 
 use Tourze\SymfonyDependencyServiceLoader\AutoExtension;
 
-class GiteeApiExtension extends AutoExtension
+final class GiteeApiExtension extends AutoExtension
 {
     protected function getConfigDir(): string
     {

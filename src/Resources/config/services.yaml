@@ -16,10 +16,6 @@ services:
   GiteeApiBundle\Service\:
     resource: '../../Service/'
 
-  # 为测试环境提供必需的服务  
-  Symfony\Component\Routing\Generator\UrlGeneratorInterface:
-    class: GiteeApiBundle\Tests\Service\MockUrlGenerator
-
   # 配置缓存实现（测试和开发环境）
   Psr\SimpleCache\CacheInterface:
     class: Symfony\Component\Cache\Psr16Cache
